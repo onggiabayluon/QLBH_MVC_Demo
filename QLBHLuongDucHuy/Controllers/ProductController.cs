@@ -56,5 +56,19 @@ namespace QLBHLuongDucHuy.Controllers
             return RedirectToAction("ListProduct");
         }
 
+        public ActionResult Delete(int id)
+        {
+            Product p = da.Products.FirstOrDefault(s => s.ProductID == id);
+            return View(p);
+        }
+        [HttpPost]
+        public ActionResult Delete(int id, FormCollection collection)
+        {
+            Product p = da.Products.FirstOrDefault(s => s.ProductID == id);
+            da.Products.DeleteOnSubmit(p);
+            da.SubmitChanges();
+            return RedirectToAction("ListProduct");
+        }
+
     }
 }
