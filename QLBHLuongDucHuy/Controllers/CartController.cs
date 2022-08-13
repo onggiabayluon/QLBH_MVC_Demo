@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Transactions;
 using System.Web;
 using System.Web.Mvc;
 using QLBHLuongDucHuy.Models;
@@ -99,5 +100,50 @@ namespace QLBHLuongDucHuy.Controllers
 
             return RedirectToAction("ListCarts");
         }
+
+        public ActionResult OrderProduct(FormCollection form)
+        {
+            using (TransactionScope transactionScope = new TransactionScope())
+            {
+                try
+                {
+                    //1
+                    Order or = new Order();
+                    or.OrderDate = DateTime.Now;
+                    da.Orders.InsertOnSubmit(or);
+                    da.SubmitChanges();
+                    //2
+                    List<Cart> carts = GetListCarts();
+                    foreach (var item in carts)
+                    {
+                        Order_Detail d = new Models.Order_Detail();
+                        d.OrderID = or.OrderID;
+                        d.ProductID = item.productID;
+                        d.Quantity = short.Parse(item.Quantity.ToString());
+                        d.UnitPrice = item.UnitPrice;
+                        d.Discount = 0;
+
+                        da.Order_Details.InsertOnSubmit(d);
+                    }
+                    da.SubmitChanges();
+                    transactionScope.Complete();
+                    Session["Cart"] = null;
+                }
+                catch(Exception)
+                {
+                    transactionScope.Dispose();
+                    return RedirectToAction("ListCarts");
+                }
+            }
+            return RedirectToAction("OrderDetailList", "Cart");
+        }
+
+        // View: OrderDetail List
+        public ActionResult OrderDetailList()
+        {
+            var p = da.Order_Details.OrderByDescending(s => s.OrderID).Select(s => s).ToList();
+            return View(p);
+        }
+
     }
 }
